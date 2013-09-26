@@ -3,22 +3,22 @@
 use warnings;
 use strict;
 
-use LWP;
-use HTTP::Request::Common qw(POST);
+use LWP::UserAgent;
+use HTTP::Request::Common qw( POST );
 use Getopt::Long::Descriptive;
 use Params::Validate qw(:all);
+use JSON;
 use Data::Dumper;
 
 my $config_path = "$ENV{HOME}/.itmages.conf";
 
 #get options
 my @opts = (
-    [ "user=s"      => "Username",                      { type => SCALAR, optinal => 1 } ],
-    [ "pass=s"      => "Password",                      { type => SCALAR, optinal => 1 } ],
-    [ "path|p=s"    => "Path to file or directory",     { type => SCALAR, default => $ARGV[0] } ],
-    [ "config|c=s"  => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
-    [ "configure"   => "Configure programm",            { type => SCALAR, optional => 1 } ],
-    [ "help|h"      => "Print usage message and exit",  { optional => 1 } ],
+    [ "username|u=s"    => "Username",                      { type => SCALAR, optional => 1 } ],
+    [ "password|p=s"    => "Password",                      { type => SCALAR, optional => 1 } ],
+    [ "config|c=s"      => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
+    [ "configure"       => "Configure programm",            { optional => 1 } ],
+    [ "help|h"          => "Print usage message and exit",  { optional => 1 } ],
 );
 
 my ( $opts, $usage );
@@ -30,21 +30,33 @@ my $format = "$desc\nUsage:\n%c %o";
 
 print($usage->text), exit if $opts->help;
 
-#get session params
-my $username = $opts->user;
-my $password = $opts->pass;
+#setup_config() if $opts->configure;
 
-#start session
+#get path to file or folder
+my $path = $ARGV[0];
+die "You must specify upload files" unless $path;
+
+#get session params
+my $user = $opts->username;
+my $pass = $opts->password;
+
+#upload file
 my $lwp = LWP::UserAgent->new();
-my $request = POST('https://itmages.ru/api/v3/pictures/',
-Content => [
-"UFileManager[picture]" => "",
-"UFileManager[picture]" => [ $opts->path,
-               $opts->path,
-               Content_Type => 'image/png' ],
-yt0 => "Upload",
-]);
-$request->header('X-Username' => $username);
-$request->header('X-Password' => $password);
-my $response = $lwp->request($request);
+my $request = POST( 'http://itmages.ru/api/v3/pictures/',
+                   'Content-Type' => 'form-data',
+                    $user ? ('X-Username' => $user) : '',
+                    $pass ? ('X-Password' => $pass) : '',
+                    Content => [
+                        "file" => [ $path, $path, content_type => 'image/png' ],
+                    ],
+);
+my $response = $lwp->request( $request );
 die $response->status_line, "\n" unless $response->is_success;
+
+#get links to image
+my $picture = from_json( $response->content )->{success};
+my $link = 'http://itmages.ru/image/view/'.$picture->{pictureId}.'/'.$picture->{key};
+my $direct_link = 'http://'.$picture->{storage}.'.static.itmages.ru/'.$picture->{picture};
+print "Link to image: $link\nDirect link to image: $direct_link\n";
+
+#sub setup_config {}
