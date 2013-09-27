@@ -8,6 +8,7 @@ use HTTP::Request::Common qw( POST );
 use Getopt::Long::Descriptive;
 use Params::Validate qw(:all);
 use JSON;
+use Config::Any;
 use Data::Dumper;
 
 my $config_path = "$ENV{HOME}/.itmages.conf";
@@ -30,7 +31,8 @@ my $format = "$desc\nUsage:\n%c %o";
 
 print($usage->text), exit if $opts->help;
 
-#setup_config() if $opts->configure;
+setup_config( $opts->config ) unless -e $opts->config;
+setup_config() if $opts->configure;
 
 #get path to file or folder
 my $path = $ARGV[0];
@@ -59,4 +61,9 @@ my $link = 'http://itmages.ru/image/view/'.$picture->{pictureId}.'/'.$picture->{
 my $direct_link = 'http://'.$picture->{storage}.'.static.itmages.ru/'.$picture->{picture};
 print "Link to image: $link\nDirect link to image: $direct_link\n";
 
-#sub setup_config {}
+sub setup_config ($) {
+    my $config_file = shift;
+
+    print "This helper will help you to configure itmages.ru upload script\n";
+    print "Would you like to get direct links for uploaded images?(default \"no\")\n";
+}
