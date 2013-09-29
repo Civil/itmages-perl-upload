@@ -11,12 +11,13 @@ use JSON;
 use Config::Any;
 use Data::Dumper;
 
-my $config_path = "$ENV{HOME}/.itmages.conf";
+sub setup_config($);
+sub read_input();
+
+my $config_path = "$ENV{HOME}/.itmages.json";
 
 #get options
 my @opts = (
-    [ "username|u=s"    => "Username",                      { type => SCALAR, optional => 1 } ],
-    [ "password|p=s"    => "Password",                      { type => SCALAR, optional => 1 } ],
     [ "config|c=s"      => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
     [ "configure"       => "Configure programm",            { optional => 1 } ],
     [ "help|h"          => "Print usage message and exit",  { optional => 1 } ],
@@ -29,18 +30,26 @@ my $format = "$desc\nUsage:\n%c %o";
 
 ( $opts, $usage ) = describe_options( $format, @opts );
 
-print($usage->text), exit if $opts->help;
+print( $usage->text ), exit if $opts->help;
 
+#check configuration
 setup_config( $opts->config ) unless -e $opts->config;
-setup_config() if $opts->configure;
+setup_config( $opts->config ), exit if $opts->configure;
 
 #get path to file or folder
 my $path = $ARGV[0];
 die "You must specify upload files" unless $path;
 
+#read config
+my $config;
+my $cfg = Config::Any->load_files( { files => [ $opts->config ] } );
+for ( @$cfg ) {
+        ( $config ) = values %$_;
+}
+
 #get session params
-my $user = $opts->username;
-my $pass = $opts->password;
+my $user = $config->{username};
+my $pass = $config->{password};
 
 #upload file
 my $lwp = LWP::UserAgent->new();
@@ -59,11 +68,38 @@ die $response->status_line, "\n" unless $response->is_success;
 my $picture = from_json( $response->content )->{success};
 my $link = 'http://itmages.ru/image/view/'.$picture->{pictureId}.'/'.$picture->{key};
 my $direct_link = 'http://'.$picture->{storage}.'.static.itmages.ru/'.$picture->{picture};
-print "Link to image: $link\nDirect link to image: $direct_link\n";
+print "Link to image: $link\n";
+print "Direct link to image: $direct_link\n" if $config->{direct_links};
 
 sub setup_config ($) {
     my $config_file = shift;
 
     print "This helper will help you to configure itmages.ru upload script\n";
-    print "Would you like to get direct links for uploaded images?(default \"no\")\n";
+
+    print "Would you like to get direct links for uploaded images (otherwise you would get links to itmages page) (yes/no)?[no]: ";
+    my $direct_links = read_input();
+    $direct_links = ($direct_links =~ "yes") ? 1 : 0;
+
+    print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
+    print "Enter your login (or enter nothing if you want to use anonymous mode): ";
+    my $username = read_input();
+
+    my $password = '';
+    if ( $username ) {
+        print "Enter your password: ";
+        $password = read_input();
+    }
+
+    my $config = to_json( { direct_links => $direct_links, username => $username, password => $password } );
+    open CONFIG_FILE, "> $config_file";
+    print CONFIG_FILE $config;
+    close CONFIG_FILE;
+
+    print "Script is now configured to use.\n";
+}
+
+sub read_input () {
+    my $input_param = <STDIN>;
+    chomp $input_param;
+    return $input_param;
 }
