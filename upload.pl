@@ -20,7 +20,7 @@ my $config_path = "$ENV{HOME}/.itmages.conf";
 #get options
 my @opts = (
     [ "config|c=s"      => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
-    [ "configure"       => "Configure programm",            { optional => 1 } ],
+    [ "configure"       => "Configure program",            { optional => 1 } ],
     [ "help|h"          => "Print usage message and exit",  { optional => 1 } ],
 );
 
