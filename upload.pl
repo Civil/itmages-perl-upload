@@ -57,9 +57,9 @@ if ( -d $path ) {
     my @dir = grep { -f "$path/$_" } readdir PATH;
     foreach my $file ( @dir ) {
         my $response;
-        eval { $response = upload_file( $lwp, "$path$file" ) };
+        eval { $response = upload_file( $lwp, "$path/$file" ) };
         if ( $@ ) {
-            print "Failed to upload $path$file: $@";
+            print "Failed to upload $path/$file: $@";
         } else {
             print_link( $config, $response );
         }
@@ -81,7 +81,7 @@ sub setup_config ($) {
 
     print "Would you like to get direct links for uploaded images (otherwise you would get links to itmages page) (yes/no)? [no]: ";
     my $direct_links = read_input();
-    $direct_links = ($direct_links =~ "yes") ? 1 : 0;
+    $direct_links = ( $direct_links =~ "yes" ) ? 1 : 0;
 
     print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
     print "Enter your login (or enter nothing if you want to use anonymous mode): ";
