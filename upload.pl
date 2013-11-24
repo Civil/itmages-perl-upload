@@ -79,9 +79,20 @@ sub setup_config ($) {
 
     print "This helper will help you to configure itmages.ru upload script\n";
 
-    print "Would you like to get direct links for uploaded images (otherwise you would get links to itmages page) (yes/no)? [no]: ";
+    print "Choose what style of links to print:
+    1 - direct links to image
+    2 - links to itmage page
+    3 - BB code link with thumbnail
+    4 - BB code link full size
+    5 - all links
+(1/2/3/4/5)? [2]:";
     my $direct_links = read_input();
-    $direct_links = ( $direct_links =~ "yes" ) ? 1 : 0;
+    if ( $direct_links eq "1" )  { $direct_links = "1"; }
+    elsif( $direct_links eq "2" ){ $direct_links = "2"; }
+    elsif( $direct_links eq "3" ){ $direct_links = "3"; }
+    elsif( $direct_links eq "4" ){ $direct_links = "4"; }
+    elsif( $direct_links eq "5" ){ $direct_links = "5"; }
+    else{  $direct_links = "2"; }    
 
     print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
     print "Enter your login (or enter nothing if you want to use anonymous mode): ";
@@ -125,11 +136,18 @@ sub upload_file ($$) {
 
 sub print_link ($$) {
     my $config = shift;
+    my $choice = $config->{ direct_links };    
     my $response = shift;
 
     my $picture = from_json( $response->content )->{ success };
     my $link = 'http://itmages.ru/image/view/'.$picture->{ pictureId }.'/'.$picture->{ key };
     my $direct_link = 'http://'.$picture->{ storage }.'.static.itmages.ru/'.$picture->{ picture };
-    print "Link to image: $link\n";
-    print "Direct link to image: $direct_link\n" if $config->{ direct_links };
+    my $thumbnail_link = 'http://'.$picture->{ storage }.'.static.itmages.ru/'.$picture->{ thumbnail };    
+
+    print "Link to image page: $link\n" if (($choice eq "2") || ($choice eq "5"));
+    print "Direct link to image: $direct_link\n" if (($choice eq "1") || ($choice eq "5"));
+ 
+    print "BB code thumbnail: \[url=$link\]\[img\]$thumbnail_link\[/img\]\[/url\]\n" if (($choice eq "3") || ($choice eq "5"));
+    print "BB code full size: \[url=$link\]\[img\]$direct_link\[/img\]\[/url\]\n" if (($choice eq "4") || ($choice eq "5"));
+    
 }
