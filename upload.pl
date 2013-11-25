@@ -87,12 +87,9 @@ sub setup_config ($) {
     5 - all links
 (1/2/3/4/5)? [2]:";
     my $direct_links = read_input();
-    if ( $direct_links eq "1" )  { $direct_links = "1"; }
-    elsif( $direct_links eq "2" ){ $direct_links = "2"; }
-    elsif( $direct_links eq "3" ){ $direct_links = "3"; }
-    elsif( $direct_links eq "4" ){ $direct_links = "4"; }
-    elsif( $direct_links eq "5" ){ $direct_links = "5"; }
-    else{  $direct_links = "2"; }    
+    if (   $direct_links >= 1 && $direct_links <= 5 ) {
+    $direct_links = $direct_links;
+    }else{  $direct_links = "2"; }    
 
     print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
     print "Enter your login (or enter nothing if you want to use anonymous mode): ";
