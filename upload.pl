@@ -19,9 +19,10 @@ my $config_path = "$ENV{HOME}/.itmages.conf";
 
 #get options
 my @opts = (
-    [ "config|c=s"      => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
-    [ "configure"       => "Configure program",            { optional => 1 } ],
-    [ "help|h"          => "Print usage message and exit",  { optional => 1 } ],
+    [ "config|c=s"      => "Path to configuration file",	{ type => SCALAR, default => $config_path } ],
+    [ "configure"       => "Configure program",			{ optional => 1 } ],
+    [ "style|s=s"	=> "Output style of links (1|2|3|4|5)",	{ type => SCALAR} ],
+    [ "help|h"          => "Print usage message and exit",	{ optional => 1 } ],
 );
 
 my ( $opts, $usage );
@@ -87,9 +88,11 @@ sub setup_config ($) {
     5 - all links
 (1/2/3/4/5)? [2]:";
     my $direct_links = read_input();
-    if (   $direct_links >= 1 && $direct_links <= 5 ) {
+    if ( $direct_links >= 1 && $direct_links <= 5 ) {
     $direct_links = $direct_links;
-    }else{  $direct_links = "2"; }    
+    }else{
+    $direct_links = "2"; 
+    }
 
     print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
     print "Enter your login (or enter nothing if you want to use anonymous mode): ";
@@ -104,7 +107,7 @@ sub setup_config ($) {
     my %configuration = ( direct_links => $direct_links, username => $username, password => $password );
     SaveConfig( $config_file, \%configuration );
 
-    print "Script is now configured to use.\n";
+    print "Script is now configured to use. Config sved to $config_file.\n";
 }
 
 sub read_input () {
@@ -133,7 +136,8 @@ sub upload_file ($$) {
 
 sub print_link ($$) {
     my $config = shift;
-    my $choice = $config->{ direct_links };    
+    my $choice = $config->{ direct_links };
+    $choice = $opts->style if $opts->style;
     my $response = shift;
 
     my $picture = from_json( $response->content )->{ success };
