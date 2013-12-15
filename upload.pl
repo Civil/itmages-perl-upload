@@ -19,9 +19,10 @@ my $config_path = "$ENV{HOME}/.itmages.conf";
 
 #get options
 my @opts = (
-    [ "config|c=s"      => "Path to configuration file",    { type => SCALAR, default => $config_path } ],
-    [ "configure"       => "Configure program",            { optional => 1 } ],
-    [ "help|h"          => "Print usage message and exit",  { optional => 1 } ],
+    [ "config|c=s"      => "Path to configuration file",	{ type => SCALAR, default => $config_path } ],
+    [ "configure"       => "Configure program",			{ optional => 1 } ],
+    [ "style|s=s"	=> "Output style of links (1|2|3|4|5)",	{ type => SCALAR} ],
+    [ "help|h"          => "Print usage message and exit",	{ optional => 1 } ],
 );
 
 my ( $opts, $usage );
@@ -79,9 +80,19 @@ sub setup_config ($) {
 
     print "This helper will help you to configure itmages.ru upload script\n";
 
-    print "Would you like to get direct links for uploaded images (otherwise you would get links to itmages page) (yes/no)? [no]: ";
+    print "Choose what style of links to print:
+    1 - direct links to image
+    2 - links to itmage page
+    3 - BB code link with thumbnail
+    4 - BB code link full size
+    5 - all links
+(1/2/3/4/5)? [2]:";
     my $direct_links = read_input();
-    $direct_links = ( $direct_links =~ "yes" ) ? 1 : 0;
+    if ( $direct_links >= 1 && $direct_links <= 5 ) {
+    $direct_links = $direct_links;
+    }else{
+    $direct_links = "2"; 
+    }
 
     print "OpenId login is not implemented yet, so you have to register (or use anonymous upload)\n";
     print "Enter your login (or enter nothing if you want to use anonymous mode): ";
@@ -96,7 +107,7 @@ sub setup_config ($) {
     my %configuration = ( direct_links => $direct_links, username => $username, password => $password );
     SaveConfig( $config_file, \%configuration );
 
-    print "Script is now configured to use.\n";
+    print "Script is now configured to use. Config sved to $config_file.\n";
 }
 
 sub read_input () {
@@ -125,11 +136,19 @@ sub upload_file ($$) {
 
 sub print_link ($$) {
     my $config = shift;
+    my $choice = $config->{ direct_links };
+    $choice = $opts->style if $opts->style;
     my $response = shift;
 
     my $picture = from_json( $response->content )->{ success };
     my $link = 'http://itmages.ru/image/view/'.$picture->{ pictureId }.'/'.$picture->{ key };
     my $direct_link = 'http://'.$picture->{ storage }.'.static.itmages.ru/'.$picture->{ picture };
-    print "Link to image: $link\n";
-    print "Direct link to image: $direct_link\n" if $config->{ direct_links };
+    my $thumbnail_link = 'http://'.$picture->{ storage }.'.static.itmages.ru/'.$picture->{ thumbnail };    
+
+    print "Link to image page: $link\n" if (($choice eq "2") || ($choice eq "5"));
+    print "Direct link to image: $direct_link\n" if (($choice eq "1") || ($choice eq "5"));
+ 
+    print "BB code thumbnail: \[url=$link\]\[img\]$thumbnail_link\[/img\]\[/url\]\n" if (($choice eq "3") || ($choice eq "5"));
+    print "BB code full size: \[url=$link\]\[img\]$direct_link\[/img\]\[/url\]\n" if (($choice eq "4") || ($choice eq "5"));
+    
 }
