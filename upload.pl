@@ -119,15 +119,13 @@ sub read_input () {
 sub upload_file ($$) {
     my $lwp = shift;
     my $file = shift;
+    my @opts;
+    push(@opts, 'Content-Type' => 'form-data');
+    push(@opts, 'X-Username' => $user) if $user;
+    push(@opts, 'X-Passwords' => $pass) if $pass;
+    push(@opts, Content => ["file" => [ $file, $file, content_type => 'image/png']]);
 
-    my $request = POST( 'http://itmages.ru/api/v3/pictures/',
-                       'Content-Type' => 'form-data',
-                        $user ? ('X-Username' => $user) : '',
-                        $pass ? ('X-Password' => $pass) : '',
-                        Content => [
-                            "file" => [ $file, $file, content_type => 'image/png' ],
-                        ],
-    );
+    my $request = POST( 'http://itmages.ru/api/v3/pictures/', @opts);
     my $response = $lwp->request( $request );
     die $response->status_line, "\n" unless $response->is_success;
 
